@@ -18,3 +18,7 @@
 #### Folder Structure -
 Refer the example folder in this directory for the folder structure.
 
+
+#### Video -
+
+[![Angular Boilerplate](https://github.com/ashvin777/angular-boilerplate/blob/master/app.png?raw=true)](https://youtu.be/xX37q87tps8 "Angular Boilerplate")
