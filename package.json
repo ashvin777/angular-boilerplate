@@ -1,0 +1,36 @@
+{
+  "name": "angular-boilerplate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "bin": {
+    "boilerplate": "boilerplate",
+    "http-server": "node_modules/http-server/bin/http-server",
+    "lr-http-server": "node_modules/lr-http-server/bin/lr-http-server",
+    "karma": "node_modules/karma/bin/karma"
+  },
+  "devDependencies": {
+    "better-console": "^0.2.4",
+    "cli-color": "^1.1.0",
+    "fs-extra": "^0.24.0",
+    "inquirer": "^0.10.1"
+  },
+  "dependencies": {
+    "better-console": "^0.2.4",
+    "camelcase": "^1.2.1",
+    "cli-color": "^1.2.0",
+    "fs-extra": "^0.24.0",
+    "help": "^3.0.2",
+    "http-server": "^0.10.0",
+    "inquirer": "^0.10.1",
+    "js-beautify": "^1.6.14",
+    "karma": "^1.7.0",
+    "lr-http-server": "^0.1.5",
+    "readline": "^1.1.0"
+  }
+}

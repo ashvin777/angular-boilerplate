@@ -1,0 +1,80 @@
++--------------------------------------------------------------------------------+
+|               Boilerplate Template Generator Tool -  HELP                      |
++--------------------------------------------------------------------------------+
+| Boilerplate Initialization -                                                   |
+|          Usage: boilerplate init                                               |
+|          Description: This comand will generate the project in the             |
+|          current folder. It will create some startup files into the folder.    |
++--------------------------------------------------------------------------------+
+| Adding Javascript and CSS -                                                    |
+|         Usage: boilerplate <FileType> [action]                                 |
+|                                                                                |
+|         <FileType> - controller, directive, filter, factory, service, css      |
++--------------------------------------------------------------------------------+
+| controller -                                                                   |
+|          Usage: boilerplate controller [action]                                |
+|                                                                                |
+|          Description: This command is used to access the controller            |
+|          actions available in the tool                                         |
+|                                                                                |
+|          Folder Path : /src/app/                                               |
++--------------------------------------------------------------------------------+
+| directive -                                                                    |
+|          Usage: boilerplate directive [action]                                 |
+|                                                                                |
+|          Description: This command is used to access the directive             |
+|          actions available in the tool                                         |
+|                                                                                |
+|          Folder Path : /src/directives/                                        |
++--------------------------------------------------------------------------------+
+| filter -                                                                       |
+|          Usage: boilerplate filter [action]                                    |
+|                                                                                |
+|          Description: This command is used to access the filter                |
+|          actions available in the tool                                         |
+|                                                                                |
+|          Folder Path : /src/filters/                                           |
++--------------------------------------------------------------------------------+
+| factory -                                                                      |
+|          Usage: boilerplate factory [action]                                   |
+|                                                                                |
+|          Description: This command is used to access the factory               |
+|          actions available in the tool.                                        |
+|                                                                                |
+|          Folder Path : /src/factory/                                           |
++--------------------------------------------------------------------------------+
+| service -                                                                      |
+|          Usage: boilerplate service [action]                                   |
+|                                                                                |
+|          Description: This command is used to access the service               |
+|          actions available in the tool.                                        |
+|                                                                                |
+|          Folder Path : /src/services/                                          |
++--------------------------------------------------------------------------------+
+| css -                                                                          |
+|         Usage: boilerplate css [action]                                        |
+|                                                                                |	
+|         Description: This command is used to access the css                    |
+|         actions available in the tool.                                         |
+|                                                                                |
+|         Folder Path : /css/                                                    |
++--------------------------------------------------------------------------------+
+| [action] -                                                                     |
+|          add: This command is used to create the JavaScript and css file.      |
+|                                                                                |
+|          list: This command will list all <FileType> related files             |
+|          available in the project.                                             |
++--------------------------------------------------------------------------------+
+| Run Application on local server -                                              |
+|          Usage: boilerplate run                                                |
+|                                                                                |
+|          Description: This command will start a server on port number 8080     |
+|          and launch the application on your default browser.                   |
++--------------------------------------------------------------------------------+
+| Run Application on live reload local server -                                  |
+|          Usage: boilerplate livereload                                         |
+|                                                                                |
+|          Description: This command will start a server on port number 8080     |
+|          and launch the application on your default browser. The server will   |
+|          reload the application once we do any change in anyfile of the project|
++--------------------------------------------------------------------------------+

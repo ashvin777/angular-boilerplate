@@ -1,0 +1,665 @@
+#! /usr/bin/env node
+
+var fs = require('fs-extra'),
+    Input = require('inquirer'),
+    beautify = require('js-beautify').js_beautify,
+    console = require('better-console'),
+    camelCase = require('camelcase'),
+    clc = require('cli-color'),
+    userArgs = process.argv.slice(2),
+    command = userArgs[0],
+    subCommand = userArgs[1],
+    cwd = process.cwd(),
+    exec = require('child_process').exec,
+    spawn = require('child_process').spawn,
+    help = require('help')(__dirname + '/help.txt');
+
+var username = "";
+
+if (typeof process.env.USER != "undefined") {
+    username = process.env.USER;
+} else {
+    username = process.env.USERNAME;
+}
+
+var user = {
+    "username": username,
+    "todaysdate": new Date()
+}
+var config = {
+    webpagetitle: "",
+    appname: "",
+    description: "",
+    css: {},
+    controller: {},
+    directive: {},
+    filter: {},
+    service: {},
+    factory: {}
+};
+
+var MSG = {
+    INFO: {
+        PROJECTGENERATED: "\nINFO: Project successfully generated. For any help use `boilerplate help` command\n",
+        WELCOME: "\n\    >> Welcome to the Web Application Boilerplate Template Generator(BTG) Tool <<\n",
+        HELP: "For any help use `boilerplate help` command\n",
+        SERVER: "INFO: Server is running: http://localhost:8080",
+        LIVESERVER: "INFO: Live reload server is running: http://localhost:8080",
+        BOILERPLATE: "\n\
+  _           _ _                 _       _        \n\
+ | |         (_| |               | |     | |       \n\
+ | |__   ___  _| | ___ _ __ _ __ | | __ _| |_ ___  \n\
+ | '_ \\ / _ \\| | |/ _ | '__| '_ \\| |/ _` | __/ _ \\ \n\
+ | |_) | (_) | | |  __| |  | |_) | | (_| | ||  __/ \n\
+ |_.__/ \\___/|_|_|\\___|_|  | .__/|_|\\__,_|\\__\\___| \n\
+                           | |                     \n\
+                           |_|                    "
+    },
+    ERROR: {
+        FILEEXIST: function(jsType) {
+            return "\nERROR: This " + jsType + " already exist in the project.\nPlease use a different name\n";
+        },
+        PROJECTEXIST: "\nERROR : Boilerplate project already exist in this directory. \nIf you want to create a new project then switch to a empty directory. \n",
+        PROJECTNOTEXIST: "\nERROR : Please create the boilerplate project first to use this feature. Use `boilerplate init` command first\n",
+        UNKOWNERROR: "ERROR: Please check the command and try again \n",
+        WHITESPACE: "\nERROR : White spaces are not allowed. Please try again\n"
+    }
+}
+
+
+var templates = {
+    state: '.state("app.~!url!~", {\
+                url: "/~!url!~",\
+                views: {\
+                    AppContent: {\
+                        templateUrl: "src/app/~!foldername!~/~!pagename!~.html",\
+                        controller : "~!controllername!~"\
+                    }\
+                }\
+            })'
+}
+
+var devices = {
+    "media": "screen and ",
+    "desktop": "(min-width: 1024px)",
+    "tablet.landscape": "(max-width: 1024px) and (orientation: landscape) ",
+    "tablet.portrait": "(max-width: 1024px)",
+    "mobile.big.landscape": "(max-width: 768px) and (orientation: landscape) ",
+    "mobile.big.portrait": "(max-width: 768px)",
+    "mobile.regular.landscape": "(max-width: 568px) and (orientation: landscape) ",
+    "mobile.regular.portrait": "(max-width: 568px)",
+    "mobile.small.landscape": "(max-width: 480px) and (orientation: landscape) ",
+    "mobile.small.portrait": "(max-width: 480px)",
+    "comments": "/*\n \tCreate By: ~!username!~  \n\r\tCreated On: ~!todaysdate!~ \n\r\tMedia: ~!media!~ \n\r\tDescription: ~!description!~ \n*/"
+}
+
+var path = {
+    controller: "/src/app/",
+    directive: "/src/directives/",
+    filter: "/src/filters/",
+    service: "/src/services/",
+    factory: "/src/factories/",
+    css: "/css/",
+    tmp: {
+        indexPage: __dirname + "/boilerplate-template/index.html",
+        appJs: __dirname + "/boilerplate-template/src/app/app.js",
+        appPage: __dirname + "/boilerplate-template/src/app/app.html",
+        bower: __dirname + "/boilerplate-template/bower_components",
+        controller: __dirname + "/boilerplate-template/src/app/controller/",
+        directive: __dirname + "/boilerplate-template/src/directives/",
+        filter: __dirname + "/boilerplate-template/src/filters/",
+        service: __dirname + "/boilerplate-template/src/services/",
+        factory: __dirname + "/boilerplate-template/src/factories/",
+        css: __dirname + "/boilerplate-template/css/",
+        appCSS: __dirname + "/boilerplate-template/css/app.css",
+        test: {
+            controller: __dirname + "/boilerplate-template/test/",
+            directive: __dirname + "/boilerplate-template/test/",
+            filter: __dirname + "/boilerplate-template/test/",
+            service: __dirname + "/boilerplate-template/test/",
+            factory: __dirname + "/boilerplate-template/test/",
+        }
+    },
+    target: {
+        indexPage: cwd + "/index.html",
+        appJs: cwd + "/src/app/app.js",
+        appPage: cwd + "/src/app/app.html",
+        bower: cwd + "/bower_components",
+        controller: cwd + "/src/app/",
+        directive: cwd + "/src/directives/",
+        filter: cwd + "/src/filters/",
+        service: cwd + "/src/services/",
+        factory: cwd + "/src/factories/",
+        boilerplateJson: cwd + "/boilerplate.json",
+        css: cwd + "/css/",
+        appCSS: cwd + "/css/app.css",
+        test: {
+            controller: cwd + "/test/app/",
+            directive: cwd + "/test/directives/",
+            filter: cwd + "/test/filters/",
+            service: cwd + "/test/services/",
+            factory: cwd + "/test/factories/",
+        }
+    }
+}
+
+function validate(input) {
+    if (input.indexOf(' ') >= 0) {
+        console.error(clc.red.bold(MSG.ERROR.WHITESPACE));
+        return false;
+    } else {
+        return true;
+    }
+}
+var questions = {
+    init: [{
+        name: 'webpagetitle',
+        message: 'project name :',
+        default: 'Hello World'
+    }, {
+        name: 'appname',
+        message: 'main module name (ng-app), white spaces are not allowed :',
+        default: 'helloworld',
+        validate: validate
+    }, {
+        name: 'description',
+        message: 'project description :',
+        default: 'This is web application developed for ... '
+    }],
+    css: {
+        add: [{
+            name: 'foldername',
+            message: 'folder name (type of css):',
+            default: 'layout'
+        }, {
+            type: "checkbox",
+            name: 'media',
+            message: 'supported platforms (use arrow to move up/down):',
+            choices: [{
+                name: "Desktop (> 1024px)",
+                checked: true,
+                value: "desktop"
+            }, {
+                name: "Tablet Landscape (<= 1024px)",
+                value: "tablet.landscape"
+            }, {
+                name: "Tablet Portrait  (<= 1024px)",
+                value: "tablet.portrait"
+            }, {
+                name: "Big Mobile Landscape (<= 768px)",
+                value: "mobile.big.landscape",
+            }, {
+                name: "Big Mobile Portrait (<= 768px)",
+                value: "mobile.big.portrait",
+            }, {
+                name: "Regular Mobile Landscape (<= 568px)",
+                value: "mobile.regular.landscape",
+            }, {
+                name: "Regular Mobile Portrait (<= 568px)",
+                value: "mobile.regular.portrait",
+            }, {
+                name: "Small Mobile Landscape(<= 480px)",
+                value: "mobile.small.landscape",
+            }, {
+                name: "Small Mobile Portrait(<= 480px)",
+                value: "mobile.small.portrait"
+            }],
+            default: 'No description available'
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    },
+    controller: {
+        add: [{
+            name: 'foldername',
+            message: 'foldername inside ' + path.controller + ':',
+            default: 'home'
+        }, {
+            name: 'controllername',
+            message: 'controller name :',
+            default: 'home',
+            validate: validate
+        }, {
+            name: 'pagename',
+            message: 'associated html page name:',
+            default: 'home'
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    },
+    directive: {
+        add: [{
+            name: 'foldername',
+            message: 'foldername inside ' + path.directive + ':',
+            default: 'list-item'
+        }, {
+            name: 'directivename',
+            message: 'directive name, atleast one hyphen should be present in the name :',
+            default: 'list-item',
+            validate: validate
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    },
+    filter: {
+        add: [{
+            name: 'filtername',
+            message: 'filter name :',
+            default: 'search',
+            validate: validate
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    },
+    service: {
+        add: [{
+            name: 'servicename',
+            message: 'service name :',
+            default: 'webservice',
+            validate: validate
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    },
+    factory: {
+        add: [{
+            name: 'factoryname',
+            message: 'factory name :',
+            default: 'utility',
+            validate: validate
+        }, {
+            name: 'description',
+            message: 'description :',
+            default: 'No description available'
+        }]
+    }
+}
+
+var _ = {
+    init: {
+        inputStart: function() {
+            Input.prompt(questions.init, function(answer) {
+                config.webpagetitle = answer.webpagetitle;
+                config.appname = answer.appname;
+                config.description = answer.description;
+                _.init.inputCompleted();
+            });
+        },
+        inputCompleted: function() {
+
+            fs.copySync(path.tmp.indexPage, path.target.indexPage);
+            fs.copySync(path.tmp.appJs, path.target.appJs);
+            fs.copySync(path.tmp.appPage, path.target.appPage);
+            // fs.copySync(path.tmp.appCSS, path.target.appCSS);
+            fs.copySync(__dirname + "/boilerplate-template/karma.conf.js", cwd + "/karma.conf.js");
+
+            _.helpers.replaceUserDetails(path.target.appPage);
+
+            _.helpers.replaceText(path.target.appJs, config, ["appname", "webpagetitle"], function() {
+                _.helpers.replaceUserDetails(path.target.appJs);
+            });
+            _.helpers.replaceText(path.target.indexPage, config, ["appname", "webpagetitle", "description"], function() {
+                _.helpers.replaceUserDetails(path.target.indexPage);
+                _.helpers.copyStaticFiles();
+            });
+            // _.helpers.replaceUserDetails(path.target.appCSS);
+
+            fs.mkdirSync(path.target.directive);
+            fs.mkdirSync(path.target.filter);
+            fs.mkdirSync(path.target.factory);
+            fs.mkdirSync(path.target.service);
+
+            _.helpers.writeConfigFile();
+
+            console.info(clc.green.bold(MSG.INFO.PROJECTGENERATED));
+        }
+    },
+    helpers: {
+        replaceText: function(filePath, root, textArray, callback) {
+            if (typeof root == "string")
+                root = JSON.parse(root);
+            fs.readFile(filePath, 'utf8', function(err, result) {
+                if (err) {
+                    return console.log(err);
+                }
+
+                var regex = null;
+
+                for (var i = 0; i < textArray.length; i++) {
+                    regex = new RegExp("~!" + textArray[i] + "!~", "g");
+                    if (typeof root[textArray[i]] != "undefined")
+                        result = result.replace(regex, root[textArray[i]]);
+                };
+                fs.writeFile(filePath, result, 'utf8', function(err) {
+                    if (err) return console.log(err);
+                    if (typeof callback != "undefined") callback();
+                });
+            });
+        },
+        replaceUserDetails: function(path) {
+            _.helpers.replaceText(path, user, ["username", "todaysdate"]);
+        },
+        copyStaticFiles: function() {
+            fs.copySync(path.tmp.bower, path.target.bower);
+        },
+        copyJsTemplate: function(jsType, answer) {
+            if (jsType == "controller") {
+                fs.copySync(path.tmp.controller + '~!controllername!~.controller.js', path.target.controller + answer.foldername + "/~!controllername!~.controller.js");
+                fs.copySync(path.tmp.controller + '~!pagename!~.html', path.target.controller + answer.foldername + "/~!pagename!~.html");
+                fs.copySync(path.tmp.test.controller + '~!controllername!~.spec.js', path.target.test.controller + answer.foldername + "/~!controllername!~.spec.js");
+            } else if (jsType == "directive") {
+                fs.copySync(path.tmp.directive + '~!directivename!~.directive.js', path.target.directive + answer.foldername + "/~!directivename!~.directive.js");
+                fs.copySync(path.tmp.directive + '~!directivename!~.template.html', path.target.directive + answer.foldername + "/~!directivename!~.template.html");
+                fs.copySync(path.tmp.test.directive + '~!directivename!~.spec.js', path.target.test.directive + answer.foldername + "/~!directivename!~.spec.js");
+            } else if (jsType == "filter") {
+                fs.copySync(path.tmp.filter + '~!filtername!~.' + jsType + '.js', path.target.filter + "~!filtername!~." + jsType + ".js");
+                fs.copySync(path.tmp.test.filter + '~!filtername!~.spec.js', path.target.test.filter + "~!filtername!~.spec.js");
+            } else if (jsType == "service") {
+                fs.copySync(path.tmp.service + '~!servicename!~.' + jsType + '.js', path.target.service + "~!servicename!~." + jsType + ".js");
+                fs.copySync(path.tmp.test.service + '~!servicename!~.spec.js', path.target.test.service + "~!servicename!~.spec.js");
+            } else if (jsType == "factory") {
+                fs.copySync(path.tmp.factory + '~!factoryname!~.' + jsType + '.js', path.target.factory + "~!factoryname!~." + jsType + ".js");
+                fs.copySync(path.tmp.test.factory + '~!factoryname!~.spec.js', path.target.test.factory + "~!factoryname!~.spec.js");
+            }
+        },
+        renameJsFile: function(jsType, answer) {
+            if (jsType == "controller") {
+                fs.renameSync(path.target.controller + answer.foldername + "/~!controllername!~.controller.js", path.target.controller + answer.foldername + "/" + answer.controllername + ".controller.js");
+                fs.renameSync(path.target.controller + answer.foldername + "/~!pagename!~.html", path.target.controller + answer.foldername + "/" + answer.pagename + ".html");
+                fs.renameSync(path.target.test.controller + answer.foldername + "/~!controllername!~.spec.js", path.target.test.controller + answer.foldername + "/" + answer.controllername + ".spec.js");
+            } else if (jsType == "directive") {
+                fs.renameSync(path.target.directive + answer.foldername + "/~!directivename!~.directive.js", path.target.directive + answer.foldername + "/" + answer.directivename + ".directive.js");
+                fs.renameSync(path.target.directive + answer.foldername + "/~!directivename!~.template.html", path.target.directive + answer.foldername + "/" + answer.directivename + ".template.html");
+                fs.renameSync(path.target.test.directive + answer.foldername + "/~!directivename!~.spec.js", path.target.test.directive + answer.foldername + "/" + answer.directivename + ".spec.js");
+            } else if (jsType == "filter") {
+                fs.renameSync(path.target.filter + "~!filtername!~." + jsType + ".js", path.target.filter + answer.filtername + "." + jsType + ".js");
+                fs.renameSync(path.target.test.filter + "~!filtername!~.spec.js", path.target.test.filter + answer.filtername + ".spec.js");
+            } else if (jsType == "service") {
+                fs.renameSync(path.target.service + "~!servicename!~." + jsType + ".js", path.target.service + answer.servicename + "." + jsType + ".js");
+                fs.renameSync(path.target.test.service + "~!servicename!~.spec.js", path.target.test.service + answer.servicename + ".spec.js");
+            } else if (jsType == "factory") {
+                fs.renameSync(path.target.factory + "~!factoryname!~." + jsType + ".js", path.target.factory + answer.factoryname + "." + jsType + ".js");
+                fs.renameSync(path.target.test.factory + "~!factoryname!~.spec.js", path.target.test.factory + answer.factoryname + ".spec.js");
+            }
+        },
+        writeConfigFile: function() {
+
+            config = beautify(JSON.stringify(config), {
+                indent_size: 4
+            });
+            fs.writeFileSync(path.target.boilerplateJson, config);
+        },
+        readConfigFile: function() {
+            try {
+                var fileText = fs.readFileSync(path.target.boilerplateJson);
+                config = JSON.parse(fileText);
+            } catch (e) {
+                //console.log(e);
+                _.helpers.writeConfigFile();
+            }
+        },
+        addScript: function(url, category) {
+            _.helpers.replaceIndexHTML(url, "script", category);
+        },
+        addCSS: function(url, category) {
+            _.helpers.replaceIndexHTML(url, "style", category);
+        },
+        getIndexHTML: function() {
+            var htmlText = "";
+            try {
+                htmlText = fs.readFileSync(path.target.indexPage, 'utf8');
+            } catch (e) {
+                console.log(e);
+            }
+            return htmlText;
+        },
+        replaceIndexHTML: function(replacement, type, category) {
+            var htmlText = _.helpers.getIndexHTML();
+            var regex = null;
+            if( category == "factorys"){
+                category = "factories";
+            }
+            if (type == "script") {
+                replacement = "<!--~!script-" + category + "!~-->\n\r\t\t<script type='text/javascript' src='" + replacement + "'></script>";
+                regex = new RegExp("<!--~!script-" + category + "!~-->", "g");
+            } else {
+                replacement = "<link rel='stylesheet' href='" + replacement + "' media='" + category + "'/>\n\r\t\t<!--~!link!~-->";
+                regex = new RegExp("<!--~!link!~-->", "g");
+            }
+
+            var result = htmlText.toString().replace(regex, replacement);
+            fs.writeFileSync(path.target.indexPage, result, 'utf8');
+        },
+        addState: function(state) {
+            var map = {
+                "~!pagename!~": state.pagename,
+                "~!controllername!~": state.controllername,
+                "~!foldername!~": state.foldername,
+                "~!url!~": camelCase(state.controllername)
+            }
+            var stateString = templates.state;
+            stateString = stateString.toString().replace(/~!pagename!~|~!controllername!~|~!foldername!~|~!url!~/g, function(matched) {
+                return map[matched];
+            });
+            _.helpers.replaceAppJs(stateString, state);
+        },
+        replaceAppJs: function(replacement, state) {
+
+            var stateFileString = fs.readFileSync(path.target.appJs, 'utf8');
+            var regex = new RegExp("//~!states!~", "g");
+            replacement = replacement + "\n\t\t//~!states!~";
+            var result = stateFileString.toString().replace(regex, replacement);
+
+            regex = new RegExp("//~!defaultState!~", "g");
+
+            //$urlRouterProvider.otherwise("/app/home");
+            result = result.toString().replace(regex, '$urlRouterProvider.otherwise("/app/' + camelCase(state.pagename) + '");');
+
+            result = beautify(result, {
+                indent_size: 4
+            });
+
+            fs.writeFileSync(path.target.appJs, result, 'utf8');
+        }
+    },
+    controller: {
+        add: function() {
+            _.addJavaScript("controller");
+        },
+        list: function() {
+            _.listObject("controller");
+        }
+    },
+    directive: {
+        add: function() {
+            _.addJavaScript("directive");
+        },
+        list: function() {
+            _.listObject("directive");
+        }
+    },
+    filter: {
+        add: function() {
+            _.addJavaScript("filter");
+        },
+        list: function() {
+            _.listObject("filter");
+        }
+    },
+    service: {
+        add: function() {
+            _.addJavaScript("service");
+        },
+        list: function() {
+            _.listObject("service");
+        }
+    },
+    factory: {
+        add: function() {
+            _.addJavaScript("factory");
+        },
+        list: function() {
+            _.listObject("factory");
+        }
+    },
+    css: {
+        add: function() {
+            _.addStyleSheet("css");
+        },
+        list: function() {
+            _.listObject("css");
+        }
+    },
+    addJavaScript: function(jsType) {
+
+        Input.prompt(questions[jsType].add, function(answer) {
+
+            var jsName = eval("answer." + jsType.toString().toLowerCase() + "name");
+
+            if (typeof config[jsType][jsName] == "undefined") {
+
+                _.helpers.copyJsTemplate(jsType, answer);
+                _.helpers.renameJsFile(jsType, answer);
+
+                var fileName = "";
+                var replaceFileTextPath = "";
+                var testReplaceFileTextPath = "";
+                if (jsType == "directive") {
+                    answer["camelCaseDirectivename"] = camelCase(answer.directivename);
+                    replaceFileTextPath = cwd + path[jsType] + answer.foldername + "/" + jsName + "." + jsType + ".js";
+                    testReplaceFileTextPath = path.target.test[jsType] + answer.foldername + "/" + jsName + ".spec.js";
+                    _.helpers.addScript(path[jsType] + answer.foldername + "/" + jsName + "." + jsType + ".js", jsType + "s");
+                    //fileName = answer.directivename;
+                } else if (jsType == "controller") {
+                    //fileName = answer.controllername;
+                    _.helpers.addState(answer);
+                    replaceFileTextPath = cwd + path[jsType] + answer.foldername + "/" + jsName + "." + jsType + ".js";
+                    testReplaceFileTextPath = path.target.test[jsType] + answer.foldername + "/" + jsName + ".spec.js";
+                    _.helpers.addScript(path[jsType] + answer.foldername + "/" + jsName + "." + jsType + ".js", jsType + "s");
+                } else {
+                    replaceFileTextPath = cwd + path[jsType] + jsName + "." + jsType + ".js";
+                    testReplaceFileTextPath = path.target.test[jsType] + jsName + ".spec.js";
+                    _.helpers.addScript(path[jsType] + jsName + "." + jsType + ".js", jsType + "s");
+                }
+
+                if (jsType == "controller" || jsType == "directive") {
+                    var pagename = answer.pagename;
+                    if (jsType == "directive") pagename = answer.directivename + ".template";
+                    var replaceHtmlFilePath = cwd + path[jsType] + answer.foldername + "/" + pagename + ".html";
+
+                    _.helpers.replaceText(replaceHtmlFilePath, answer, ["pagename", "controllername", "directivename", "filtername", "servicename", "factoryname", "description"], function() {
+                        _.helpers.replaceUserDetails(replaceHtmlFilePath);
+                    });
+                }
+
+                _.helpers.replaceText(replaceFileTextPath, answer, ["pagename", "controllername", "directivename", "foldername", "camelCaseDirectivename", "filtername", "servicename", "factoryname", "description"], function() {
+                    _.helpers.replaceText(replaceFileTextPath, config, ["appname"], function() {
+                        _.helpers.replaceUserDetails(replaceFileTextPath);
+                    });
+                });
+
+                _.helpers.replaceText(testReplaceFileTextPath, answer, ["pagename", "controllername", "directivename", "foldername", "camelCaseDirectivename", "filtername", "servicename", "factoryname", "description"], function() {
+                    _.helpers.replaceText(testReplaceFileTextPath, config, ["appname"], function() {
+                        _.helpers.replaceUserDetails(testReplaceFileTextPath);
+                    });
+                });
+
+                if (typeof config[jsType] == "undefined") {
+                    config[jsType] = {}
+                }
+                config[jsType][jsName] = answer;
+                _.helpers.writeConfigFile();
+
+                console.info(clc.green.bold("\nINFO: " + jsName + " " + jsType + " added successfully at " + path[jsType] + "\n"));
+
+            } else {
+                console.error(MSG.ERROR.FILEEXIST(jsType));
+                eval("_." + command + "." + subCommand + "()");
+            }
+
+        });
+    },
+    addStyleSheet: function(cssType) {
+        Input.prompt(questions[cssType].add, function(answer) {
+            Object.keys(answer.media).forEach(function(key) {
+
+                var cssFilePath = path.css + answer.foldername + "/" + answer.foldername + "." + answer.media[key] + ".css";
+                var media = {
+                    media : devices.media + devices[answer.media[key]]
+                };
+                _.helpers.addCSS(cssFilePath, devices.media + devices[answer.media[key]]);
+                fs.ensureFileSync(cwd + cssFilePath);
+                fs.writeFileSync(cwd + cssFilePath, devices.comments, 'utf8');
+                _.helpers.replaceText(cwd + cssFilePath, answer, ["description"], function() {
+                    _.helpers.replaceText(cwd + cssFilePath, media, ["media"], function() {
+                        _.helpers.replaceUserDetails(cwd + cssFilePath);
+                    });
+                });
+
+                config["css"][answer.foldername] = answer;
+            });
+
+            _.helpers.writeConfigFile();
+        });
+    },
+    listObject: function(jsType) {
+        var i = 1;
+        Object.keys(config[jsType]).forEach(function(key) {
+            var val = beautify(JSON.stringify(config[jsType][key]), {
+                indent_size: 4
+            });
+            if(jsType == "css"){
+                console.log(clc.green.bold((i++) + ". " + config[jsType][key]["foldername"] + " " + jsType + ":\n") + clc.blue(val));
+            } else {
+                console.log(clc.green.bold((i++) + ". " + config[jsType][key][jsType + "name"] + " " + jsType + ":\n") + clc.blue(val));
+            }
+        });
+    }
+}
+
+console.log(MSG.INFO.BOILERPLATE);
+console.info(clc.blue.bold(MSG.INFO.WELCOME));
+
+String.prototype.capitalizeFirstLetter = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+try {
+    if (command == "init") {
+        if (!fs.existsSync(path.target.boilerplateJson)) {
+            _.init.inputStart();
+        } else {
+            console.error(MSG.ERROR.PROJECTEXIST);
+            console.info(MSG.INFO.HELP);
+        }
+    } else if( command == "run"){
+        exec("http-server");
+        console.info(clc.green.bold(MSG.INFO.SERVER));
+        spawn('open', ['http://localhost:8080']);
+    } else if( command == "livereload"){
+        exec("lr-http-server");
+        console.info(clc.green.bold(MSG.INFO.LIVESERVER));
+        //spawn('open', ['http://localhost:8080']);
+    } else if (command == "--help" || command == "--h" || command == "help") {
+        return help(0);
+    } else {
+        if (fs.existsSync(path.target.boilerplateJson)) {
+            _.helpers.readConfigFile();
+            eval("_." + command + "." + subCommand + "()");
+        } else {
+            console.error(MSG.ERROR.PROJECTNOTEXIST);
+            console.info(MSG.INFO.HELP);
+        }
+    }
+} catch (e) {
+    console.error(MSG.ERROR.UNKOWNERROR + e);
+}

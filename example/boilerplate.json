@@ -1,0 +1,51 @@
+{
+    "webpagetitle": "AwesomeProject",
+    "appname": "awesomeproject",
+    "description": "This is web application developed for ... ",
+    "css": {
+        "layout": {
+            "foldername": "layout",
+            "media": ["desktop"],
+            "description": "No description available"
+        },
+        "rwd": {
+            "foldername": "rwd",
+            "media": ["desktop", "tablet.landscape", "tablet.portrait", "mobile.big.landscape", "mobile.big.portrait", "mobile.regular.landscape", "mobile.regular.portrait", "mobile.small.landscape", "mobile.small.portrait"],
+            "description": "No description available"
+        }
+    },
+    "controller": {
+        "home": {
+            "foldername": "home",
+            "controllername": "home",
+            "pagename": "home",
+            "description": "No description available"
+        }
+    },
+    "directive": {
+        "list-item": {
+            "foldername": "list-item",
+            "directivename": "list-item",
+            "description": "No description available",
+            "camelCaseDirectivename": "listItem"
+        }
+    },
+    "filter": {
+        "search": {
+            "filtername": "search",
+            "description": "No description available"
+        }
+    },
+    "service": {
+        "webservice": {
+            "servicename": "webservice",
+            "description": "No description available"
+        }
+    },
+    "factory": {
+        "utility": {
+            "factoryname": "utility",
+            "description": "No description available"
+        }
+    }
+}
