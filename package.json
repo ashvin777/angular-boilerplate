@@ -1,6 +1,6 @@
 {
   "name": "angular-boilerplate-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "During Development adding Controllers, Service, Factories, Filters, Directives, Jasmin Unit Test Cases and RWD CSS Styles with automatic Routing Configuration and index.html linking. It will speed up the development.",
   "main": "boilerplate",
   "scripts": {
