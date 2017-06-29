@@ -1,10 +1,14 @@
 {
-  "name": "angular-boilerplate",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "angular-boilerplate-cli",
+  "version": "1.0.1",
+  "description": "During Development adding Controllers, Service, Factories, Filters, Directives, Jasmin Unit Test Cases and RWD CSS Styles with automatic Routing Configuration and index.html linking. It will speed up the development.",
+  "main": "boilerplate",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ashvin777/framework7.angular.git"
   },
   "author": "",
   "license": "ISC",
